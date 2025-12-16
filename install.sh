@@ -54,7 +54,7 @@ if ! curl -fsSL "$LOCK_URL" -o "$LOCK_FILE"; then
 fi
 
 # Build deno install command
-DENO_INSTALL_ARGS="-A --global -rf --lock=$LOCK_FILE -n ${COMMAND_NAME}"
+DENO_INSTALL_ARGS="-A --unstable-kv --global -rf --lock=$LOCK_FILE -n ${COMMAND_NAME}"
 
 # Add custom install directory if specified
 if [ -n "$INSTALL_DIR" ]; then
