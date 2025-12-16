@@ -118,6 +118,7 @@
 
 // CLI entry point when run directly
 if (import.meta.main) {
+  const _ = await import("@probitas/probitas"); // Ensure core package is loaded
   const { main } = await import("./src/main.ts");
   const exitCode = await main(Deno.args);
   Deno.exit(exitCode);
