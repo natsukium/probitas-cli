@@ -1,5 +1,9 @@
 # Probitas CLI
 
+[![Test](https://github.com/jsr-probitas/cli/actions/workflows/test.yml/badge.svg)](https://github.com/jsr-probitas/cli/actions/workflows/test.yml)
+[![Release Assets](https://github.com/jsr-probitas/cli/actions/workflows/release-assets.yml/badge.svg)](https://github.com/jsr-probitas/cli/actions/workflows/release-assets.yml)
+[![codecov](https://codecov.io/gh/jsr-probitas/cli/graph/badge.svg)](https://codecov.io/gh/jsr-probitas/cli)
+
 Command-line interface for
 [Probitas](https://github.com/jsr-probitas/probitas) - a scenario-based testing
 & workflow execution framework.
