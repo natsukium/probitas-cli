@@ -17,7 +17,7 @@
  * @module
  */
 
-import { parseArgs } from "jsr:@std/cli@^1.0.24/parse-args";
+import { parseArgs } from "@std/cli/parse-args";
 
 const WINDOWS_TARGETS = [
   "x86_64-pc-windows-msvc",
