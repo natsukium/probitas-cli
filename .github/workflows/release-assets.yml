@@ -62,7 +62,7 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Update deno.json version
-        run: deno task update-version ${{ steps.version.outputs.version }}
+        run: deno task update-version -- ${{ steps.version.outputs.version }}
 
       - name: Set archive name
         id: archive
