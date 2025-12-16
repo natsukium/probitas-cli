@@ -56,13 +56,13 @@ jobs:
       - name: Get version from tag
         id: version
         run: |
-          TAG="${{ inputs.tag || github.ref_name }}"
+          TAG="${{ inputs.tag || github.event.release.tag_name }}"
           # Remove 'v' prefix if present (e.g., v0.7.1 -> 0.7.1)
           VERSION="${TAG#v}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Update deno.json version
-        run: deno task update-version -- ${{ steps.version.outputs.version }}
+        run: deno task update-version ${{ steps.version.outputs.version }}
 
       - name: Set archive name
         id: archive
