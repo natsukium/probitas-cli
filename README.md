@@ -16,7 +16,7 @@ Command-line interface for
 Requires [Deno](https://deno.land/) v2.x or later.
 
 ```bash
-curl -fsSL https://jsr.io/@probitas/cli/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/jsr-probitas/cli/main/install.sh | sh
 ```
 
 **Environment variables:**
@@ -28,10 +28,10 @@ curl -fsSL https://jsr.io/@probitas/cli/install.sh | sh
 
 ```bash
 # Install specific version
-curl -fsSL https://jsr.io/@probitas/cli/install.sh | PROBITAS_VERSION=0.1.0 sh
+curl -fsSL https://raw.githubusercontent.com/jsr-probitas/cli/main/install.sh | PROBITAS_VERSION=0.1.0 sh
 
 # Install to custom directory
-curl -fsSL https://jsr.io/@probitas/cli/install.sh | PROBITAS_INSTALL_DIR=/usr/local sh
+curl -fsSL https://raw.githubusercontent.com/jsr-probitas/cli/main/install.sh | PROBITAS_INSTALL_DIR=/usr/local sh
 ```
 
 ### Using Nix
