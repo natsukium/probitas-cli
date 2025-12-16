@@ -6,6 +6,8 @@ Command-line interface for
 
 ## Installation
 
+### Using install script
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jsr-probitas/cli/main/install.sh | bash
 ```
@@ -18,6 +20,23 @@ curl -fsSL https://raw.githubusercontent.com/jsr-probitas/cli/main/install.sh | 
 
 # Install to custom directory
 curl -fsSL https://raw.githubusercontent.com/jsr-probitas/cli/main/install.sh | PROBITAS_INSTALL_DIR=/usr/local/bin bash
+```
+
+### Using Nix
+
+With [Nix](https://nixos.org/) and flakes enabled:
+
+```bash
+# Run directly without installing
+nix run github:jsr-probitas/cli
+
+# Install to profile
+nix profile install github:jsr-probitas/cli
+
+# Use in a flake (flake.nix)
+{
+  inputs.probitas-cli.url = "github:jsr-probitas/cli";
+}
 ```
 
 ## Usage
@@ -98,6 +117,20 @@ Create a `probitas.json` file in your project root:
 ```
 
 ## Development
+
+### Using Nix (recommended)
+
+```bash
+# Enter development shell with all dependencies
+nix develop
+
+# Or run commands directly
+nix develop -c deno task test
+```
+
+### Without Nix
+
+Requires [Deno](https://deno.land/) v2.x or later.
 
 ```bash
 # Run tests
