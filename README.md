@@ -34,6 +34,19 @@ curl -fsSL https://raw.githubusercontent.com/jsr-probitas/cli/main/install.sh | 
 curl -fsSL https://raw.githubusercontent.com/jsr-probitas/cli/main/install.sh | PROBITAS_INSTALL_DIR=/usr/local sh
 ```
 
+### Using Homebrew (macOS/Linux)
+
+```bash
+# Add the tap and install
+brew tap jsr-probitas/tap
+brew install probitas
+
+# Or install directly
+brew install jsr-probitas/tap/probitas
+```
+
+Deno is installed automatically as a dependency.
+
 ### Using Nix
 
 With [Nix](https://nixos.org/) and flakes enabled:
