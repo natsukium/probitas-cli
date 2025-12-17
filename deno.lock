@@ -29,7 +29,7 @@
     "jsr:@probitas/client@0": "0.3.1",
     "jsr:@probitas/core@~0.1.2": "0.1.2",
     "jsr:@probitas/discover@~0.2.12": "0.2.12",
-    "jsr:@probitas/expect@~0.2.4": "0.2.4",
+    "jsr:@probitas/expect@~0.2.4": "0.2.5",
     "jsr:@probitas/logger@0": "0.2.12",
     "jsr:@probitas/logger@~0.2.1": "0.2.12",
     "jsr:@probitas/logger@~0.2.12": "0.2.12",
@@ -252,8 +252,8 @@
         "jsr:@std/fs@^1.0.20"
       ]
     },
-    "@probitas/expect@0.2.4": {
-      "integrity": "ee0305dc64721ae1629046cd40761bb3256a014c7d078daa685a9cfa40782b66",
+    "@probitas/expect@0.2.5": {
+      "integrity": "34cc2ad54c9bb85c40ae451e52e0739321406c3425ea827e5acaf6417e0081e4",
       "dependencies": [
         "jsr:@core/errorutil",
         "jsr:@probitas/core",
