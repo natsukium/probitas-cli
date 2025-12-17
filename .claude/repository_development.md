@@ -11,7 +11,6 @@ Coding conventions and development practices for the Probitas CLI.
 
 **Test Utilities**
 
-- Use `src/commands/_test_utils.ts` for shared test helpers
 - Avoid testing internal details; focus on command input/output behavior
 
 ## Command Implementation Pattern

@@ -14,7 +14,7 @@
     ]
   },
   "tasks": {
-    "check": "deno check ./**/*.ts",
+    "check": "deno check --doc",
     "test": "deno test -A --parallel --shuffle",
     "test:coverage": "deno task test --coverage=.coverage",
     "coverage": "deno coverage .coverage --include='src/'",
