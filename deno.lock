@@ -201,6 +201,7 @@
     "@probitas/client-sql-duckdb@0.3.1": {
       "integrity": "e9028fb062afb1889bf2a0b080b9a83a3b3b7b2e54145f46cf0791e390e75c84",
       "dependencies": [
+        "jsr:@probitas/client",
         "jsr:@probitas/client-sql",
         "jsr:@probitas/logger@0",
         "npm:@duckdb/node-api"
@@ -209,6 +210,7 @@
     "@probitas/client-sql-mysql@0.3.1": {
       "integrity": "1d731a32884394768f00527feae0fd2f9dd095b15f070d433e27368e41366728",
       "dependencies": [
+        "jsr:@probitas/client",
         "jsr:@probitas/client-sql",
         "jsr:@probitas/logger@0",
         "npm:mysql2"
@@ -227,6 +229,7 @@
       "integrity": "e3e4badf8e02fb8294324e9a8b1a660b07046e936a39a93054564c97924b13f0",
       "dependencies": [
         "jsr:@db/sqlite",
+        "jsr:@probitas/client",
         "jsr:@probitas/client-sql",
         "jsr:@probitas/logger@0"
       ]
@@ -395,6 +398,7 @@
       "integrity": "a917ffdeb5924c9be436dc78bc32e511760e14d3a96e49c607fc5ecca86d0092",
       "dependencies": [
         "jsr:@std/assert@^1.0.15",
+        "jsr:@std/async",
         "jsr:@std/data-structures",
         "jsr:@std/internal@^1.0.12"
       ]
