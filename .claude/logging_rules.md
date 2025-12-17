@@ -14,7 +14,7 @@ at the appropriate level.
 Exception: When context would be lost (e.g., in deeply nested async operations),
 use `debug` level to preserve diagnostic information.
 
-```ts
+```ts ignore
 // Bad - Redundant logging
 function process(data: Data): Result {
   try {
@@ -88,7 +88,7 @@ diagnostics.
 
 ## Examples
 
-```ts
+```ts ignore
 import { getLogger } from "@probitas/logger";
 
 const logger = getLogger(["probitas", "runner"]);
@@ -137,7 +137,7 @@ Use `logger` only for internal diagnostics that users don't need to see:
 
 ### Examples
 
-```ts
+```ts ignore
 // Good - User-facing warnings use console
 if (scenarioFiles.length === 0) {
   console.warn("No scenario files found");

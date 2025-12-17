@@ -17,7 +17,7 @@ Coding conventions and development practices for the Probitas CLI.
 
 Commands follow a consistent pattern:
 
-```typescript
+```typescript ignore
 import { parseArgs } from "@std/cli";
 import { configureLogging, getLogger, type LogLevel } from "@probitas/logger";
 import { EXIT_CODE } from "../constants.ts";

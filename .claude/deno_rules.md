@@ -11,7 +11,7 @@ Language-specific conventions and patterns for Deno projects.
 
 Each implementation file should export only what is needed for public API:
 
-```ts
+```ts ignore
 // runner.ts - Export only public API
 export class Runner {/* ... */}
 export type { RunnerOptions };
@@ -22,7 +22,7 @@ function internalHelper() {/* ... */}
 
 Entry point files (`mod.ts`, `{module}.ts`) use `export *` to re-export:
 
-```ts
+```ts ignore
 // mod.ts
 export * from "./runner.ts";
 export * from "./skip.ts";
@@ -33,7 +33,7 @@ export type * from "./types.ts"; // Type-only for tree-shaking
 
 When internal functions need to be tested, use `_internal` namespace:
 
-```ts
+```ts ignore
 // parser.ts
 function parseValue(input: string): Value {
   // Implementation
@@ -58,7 +58,7 @@ export const _internal = {
 
 Usage in tests:
 
-```ts
+```ts ignore
 // parser_test.ts
 import { _internal, parse } from "./parser.ts";
 
@@ -107,7 +107,7 @@ package/
 This keeps `mod.ts` unique to the package root and makes submodule structure
 clearer in import paths:
 
-```ts
+```ts ignore
 // Good
 import { expectMongoResult } from "@probitas/expect/mongodb";
 
@@ -154,7 +154,7 @@ Deno's `deno test --doc` validates these examples during CI.
 
 Use `#private` syntax instead of TypeScript's `private` keyword:
 
-```ts
+```ts ignore
 // Good - Runtime-enforced privacy
 class Runner {
   #reporter: Reporter;
@@ -182,7 +182,7 @@ Benefits of `#private`:
 
 Custom error classes must set `this.name` for cross-process safety:
 
-```ts
+```ts ignore
 export class Skip extends Error {
   readonly reason?: string;
 
@@ -196,7 +196,7 @@ export class Skip extends Error {
 
 When checking error types across Worker boundaries, use fallback:
 
-```ts
+```ts ignore
 function isSkip(err: unknown): err is Skip {
   if (err instanceof Skip) return true;
   // Fallback for cross-process scenarios
@@ -209,7 +209,7 @@ function isSkip(err: unknown): err is Skip {
 
 Use `AsyncDisposableStack` for guaranteed cleanup:
 
-```ts
+```ts ignore
 async function runWithResources() {
   await using stack = new AsyncDisposableStack();
 
@@ -222,7 +222,7 @@ async function runWithResources() {
 
 Create custom Disposable objects when needed:
 
-```ts
+```ts ignore
 export function createScopedSignal(): AbortSignal & Disposable {
   const controller = new AbortController();
   return Object.assign(controller.signal, {
@@ -240,7 +240,7 @@ await fetch(url, { signal });
 
 Place test utilities in `_testutils.ts` with factory functions:
 
-```ts
+```ts ignore
 // _testutils.ts
 import type { ScenarioDefinition } from "./types.ts";
 
@@ -269,7 +269,7 @@ export function createTestStep(
 
 Usage in tests:
 
-```ts
+```ts ignore
 import { createTestScenario } from "./_testutils.ts";
 
 Deno.test("scenario execution", async () => {
@@ -292,7 +292,7 @@ The fluent API uses TypeScript's type system to:
 
 Results are discriminated unions based on status:
 
-```ts
+```ts ignore
 type StepResult =
   | { status: "passed"; value: unknown }
   | { status: "failed" | "skipped"; error: unknown };
@@ -300,7 +300,7 @@ type StepResult =
 
 This provides type-safe access to status-specific fields:
 
-```ts
+```ts ignore
 if (result.status === "passed") {
   // Safe: value exists when status is "passed"
   console.log(result.value);

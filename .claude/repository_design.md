@@ -63,7 +63,7 @@ Main Thread                          Worker Thread
 
 Worker messages use discriminated unions for type safety:
 
-```typescript
+```typescript ignore
 type WorkerOutput =
   | { type: "ready" }
   | { type: "result"; taskId: string; result: ScenarioResult }
@@ -87,7 +87,7 @@ Configuration loading follows a search hierarchy:
 
 ### Config Schema
 
-```typescript
+```typescript ignore
 interface Config {
   includes?: string[]; // Glob patterns for scenario files
   excludes?: string[]; // Glob patterns to exclude
