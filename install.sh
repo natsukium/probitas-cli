@@ -11,10 +11,15 @@
 
 set -e
 
-# Check if deno is available
+# Check if required commands are available
+if ! command -v curl >/dev/null 2>&1; then
+  echo "Error: curl is not installed" >&2
+  exit 1
+fi
+
 if ! command -v deno >/dev/null 2>&1; then
-  echo "Error: deno is not installed"
-  echo "Please install Deno first: https://deno.land/"
+  echo "Error: deno is not installed" >&2
+  echo "Please install Deno first: https://deno.land/" >&2
   exit 1
 fi
 
@@ -32,7 +37,7 @@ if [ -z "$VERSION" ]; then
   # JSR provides a meta.json file with version information
   VERSION=$(curl -fsSL "${JSR_BASE_URL}/meta.json" | grep -o '"latest":"[^"]*"' | cut -d'"' -f4)
   if [ -z "$VERSION" ]; then
-    echo "Error: Failed to fetch latest version"
+    echo "Error: Failed to fetch latest version" >&2
     exit 1
   fi
 fi
@@ -49,12 +54,12 @@ LOCK_FILE="${TMPDIR}/deno.lock"
 
 echo "Downloading lock file from ${LOCK_URL}..."
 if ! curl -fsSL "$LOCK_URL" -o "$LOCK_FILE"; then
-  echo "Error: Failed to download deno.lock from ${LOCK_URL}"
+  echo "Error: Failed to download deno.lock from ${LOCK_URL}" >&2
   exit 1
 fi
 
 # Build deno install command
-DENO_INSTALL_ARGS="-A --unstable-kv --global -rf --lock=$LOCK_FILE -n ${COMMAND_NAME}"
+DENO_INSTALL_ARGS="-Agf --unstable-kv --lock=$LOCK_FILE -n ${COMMAND_NAME}"
 
 # Add custom install directory if specified
 if [ -n "$INSTALL_DIR" ]; then
@@ -64,7 +69,7 @@ fi
 
 # Install using deno with the lock file
 echo "Running deno install..."
-deno install $DENO_INSTALL_ARGS "jsr:${PACKAGE_NAME}@${VERSION}"
+DENO_NO_UPDATE_CHECK=1 deno install $DENO_INSTALL_ARGS "jsr:${PACKAGE_NAME}@${VERSION}"
 
 echo ""
 echo "Successfully installed ${COMMAND_NAME}@${VERSION}"
