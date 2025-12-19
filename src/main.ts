@@ -7,7 +7,10 @@
 import { parseArgs } from "@std/cli";
 import { getLogger } from "@probitas/logger";
 import { EXIT_CODE } from "./constants.ts";
+import { checkCommand } from "./commands/check.ts";
+import { fmtCommand } from "./commands/fmt.ts";
 import { initCommand } from "./commands/init.ts";
+import { lintCommand } from "./commands/lint.ts";
 import { listCommand } from "./commands/list.ts";
 import { runCommand } from "./commands/run.ts";
 import { getVersionInfo, readAsset } from "./utils.ts";
@@ -77,6 +80,15 @@ export async function main(args: string[]): Promise<number> {
 
     case "list":
       return await listCommand(commandArgs, cwd);
+
+    case "fmt":
+      return await fmtCommand(commandArgs, cwd);
+
+    case "lint":
+      return await lintCommand(commandArgs, cwd);
+
+    case "check":
+      return await checkCommand(commandArgs, cwd);
 
     default:
       console.warn(`Unknown command: ${command}`);
