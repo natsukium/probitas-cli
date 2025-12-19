@@ -115,7 +115,9 @@
  *
  * @module
  */
-import "@probitas/probitas"; // Ensure package is included in bundle
+// deno-lint-ignore no-unversioned-import
+import "jsr:@probitas/probitas"; // Ensure package is included in bundle
+import "jsr:@probitas/probitas@^0"; // Ensure package is included in bundle
 
 // CLI entry point when run directly
 if (import.meta.main) {
