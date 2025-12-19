@@ -10,7 +10,7 @@
  * - Async operations
  * - Skip for conditional execution
  */
-import { scenario, Skip } from "jsr:@probitas/probitas@^0";
+import { expect, scenario, Skip } from "jsr:@probitas/probitas@^0";
 
 // Simulated database for demonstration
 class MockDatabase {
@@ -72,12 +72,8 @@ export default scenario("Advanced Example", {
       const { db } = ctx.resources;
       const { id } = ctx.previous;
       const stored = await db.get<{ id: string; name: string }>(`user:${id}`);
-      if (!stored) {
-        throw new Error("User not found in database");
-      }
-      if (stored.id !== id) {
-        throw new Error("User ID mismatch");
-      }
+      expect(stored).not.toBeUndefined();
+      expect(stored!.id).toBe(id);
       return { verified: true, userId: id };
     },
     {

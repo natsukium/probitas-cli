@@ -5,17 +5,28 @@
  * All scenarios are expected to fail - they use dummy responses to trigger failures.
  */
 import { expect, scenario } from "jsr:@probitas/probitas@^0";
-import type { HttpResponse } from "jsr:@probitas/client-http@^0";
+import {
+  HttpError,
+  type HttpResponse,
+  type HttpResponseError,
+  type HttpResponseSuccess,
+} from "jsr:@probitas/client-http@^0";
 
-// Helper to create mock HTTP response
-function createMockResponse(
-  overrides: Partial<HttpResponse> = {},
-): HttpResponse {
+// Helper to create mock HTTP error response
+function createMockErrorResponse(
+  overrides: Partial<Omit<HttpResponseError, "kind" | "processed" | "ok">> = {},
+): HttpResponseError {
   const bodyBytes = new TextEncoder().encode(
     '{"error":"something went wrong"}',
   );
-  const defaultResponse: HttpResponse = {
+  const rawResponse = new Response('{"error":"something went wrong"}', {
+    status: 500,
+    statusText: "Internal Server Error",
+    headers: { "content-type": "application/json" },
+  });
+  const defaultResponse: HttpResponseError = {
     kind: "http",
+    processed: true,
     ok: false,
     status: 500,
     statusText: "Internal Server Error",
@@ -26,19 +37,50 @@ function createMockResponse(
     blob: () => new Blob([bodyBytes]),
     text: () => '{"error":"something went wrong"}',
     // deno-lint-ignore no-explicit-any
-    data: <T = any>(): T | null => ({ error: "something went wrong" }) as T,
+    json: <T = any>(): T | null => ({ error: "something went wrong" }) as T,
     duration: 1500,
-    raw: () =>
-      new Response('{"error":"something went wrong"}', {
-        status: 500,
-        statusText: "Internal Server Error",
-        headers: { "content-type": "application/json" },
-      }),
+    raw: () => rawResponse,
+    error: new HttpError(500, "Internal Server Error", {
+      headers: new Headers({ "content-type": "application/json" }),
+      body: bodyBytes,
+    }),
   };
   return { ...defaultResponse, ...overrides };
 }
 
-const dummyResponse = createMockResponse();
+// Helper to create mock HTTP success response
+function createMockSuccessResponse(
+  overrides: Partial<Omit<HttpResponseSuccess, "kind" | "processed" | "ok">> =
+    {},
+): HttpResponseSuccess {
+  const bodyBytes = new TextEncoder().encode('{"status":"ok"}');
+  const rawResponse = new Response('{"status":"ok"}', {
+    status: 200,
+    statusText: "OK",
+    headers: { "content-type": "application/json" },
+  });
+  const defaultResponse: HttpResponseSuccess = {
+    kind: "http",
+    processed: true,
+    ok: true,
+    status: 200,
+    statusText: "OK",
+    headers: new Headers({ "content-type": "application/json" }),
+    url: "http://example.com/api",
+    body: bodyBytes,
+    arrayBuffer: () => bodyBytes.buffer,
+    blob: () => new Blob([bodyBytes]),
+    text: () => '{"status":"ok"}',
+    // deno-lint-ignore no-explicit-any
+    json: <T = any>(): T | null => ({ status: "ok" }) as T,
+    duration: 100,
+    raw: () => rawResponse,
+    error: null,
+  };
+  return { ...defaultResponse, ...overrides };
+}
+
+const dummyResponse: HttpResponse = createMockErrorResponse();
 
 export const toBeOk = scenario("HTTP - toBeOk failure", {
   tags: ["failure", "http"],
@@ -142,25 +184,25 @@ export const toHaveTextContaining = scenario(
   })
   .build();
 
-export const toHaveDataMatching = scenario(
-  "HTTP - toHaveDataMatching failure",
+export const toHaveJsonMatching = scenario(
+  "HTTP - toHaveJsonMatching failure",
   {
     tags: ["failure", "http"],
   },
 )
-  .step("toHaveDataMatching fails", () => {
-    expect(dummyResponse).toHaveDataMatching({ status: "ok" });
+  .step("toHaveJsonMatching fails", () => {
+    expect(dummyResponse).toHaveJsonMatching({ status: "ok" });
   })
   .build();
 
-export const toHaveDataProperty = scenario(
-  "HTTP - toHaveDataProperty failure",
+export const toHaveJsonProperty = scenario(
+  "HTTP - toHaveJsonProperty failure",
   {
     tags: ["failure", "http"],
   },
 )
-  .step("toHaveDataProperty fails when property missing", () => {
-    expect(dummyResponse).toHaveDataProperty("success");
+  .step("toHaveJsonProperty fails when property missing", () => {
+    expect(dummyResponse).toHaveJsonProperty("success");
   })
   .build();
 
@@ -185,7 +227,7 @@ export const notToBeOk = scenario("HTTP - not.toBeOk failure", {
   tags: ["failure", "http"],
 })
   .step("not.toBeOk fails when ok is true", () => {
-    const okResponse = createMockResponse({ ok: true, status: 200 });
+    const okResponse: HttpResponse = createMockSuccessResponse();
     expect(okResponse).not.toBeOk();
   })
   .build();
@@ -203,8 +245,8 @@ export default [
   toHaveUrlContaining,
   toHaveBodyLength,
   toHaveTextContaining,
-  toHaveDataMatching,
-  toHaveDataProperty,
+  toHaveJsonMatching,
+  toHaveJsonProperty,
   toHaveDuration,
   toHaveDurationLessThan,
   notToBeOk,

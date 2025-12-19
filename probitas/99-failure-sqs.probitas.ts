@@ -6,154 +6,248 @@
  */
 import { expect, scenario } from "jsr:@probitas/probitas@^0";
 import type {
+  SqsBatchFailedEntry,
+  SqsBatchSuccessEntry,
   SqsDeleteBatchResult,
   SqsDeleteQueueResult,
   SqsDeleteResult,
   SqsEnsureQueueResult,
   SqsMessage,
-  SqsMessages,
   SqsReceiveResult,
   SqsSendBatchResult,
   SqsSendResult,
 } from "jsr:@probitas/client-sqs@^0";
 
-// Helper to create SqsMessages
-function createMockMessages(messages: SqsMessage[]): SqsMessages {
-  const arr = [...messages] as SqsMessage[] & {
-    first(): SqsMessage | undefined;
-    firstOrThrow(): SqsMessage;
-    last(): SqsMessage | undefined;
-    lastOrThrow(): SqsMessage;
-  };
-  arr.first = function () {
-    return this[0];
-  };
-  arr.firstOrThrow = function () {
-    if (this.length === 0) throw new Error("No messages available");
-    return this[0];
-  };
-  arr.last = function () {
-    return this[this.length - 1];
-  };
-  arr.lastOrThrow = function () {
-    if (this.length === 0) throw new Error("No messages available");
-    return this[this.length - 1];
-  };
-  return arr as unknown as SqsMessages;
+// Local mock error class to work around package export issue
+// (SqsConnectionError is re-exported as type-only from types.ts)
+class MockSqsConnectionError extends Error {
+  override readonly name = "SqsConnectionError";
+  readonly kind = "connection" as const;
+  readonly code?: string;
+
+  constructor(message: string) {
+    super(message);
+  }
 }
 
-// Mock helpers
-const mockSendResult = (
-  overrides: Partial<SqsSendResult> = {},
-): SqsSendResult => ({
-  kind: "sqs:send" as const,
-  ok: false,
-  messageId: "msg-abc123",
-  md5OfBody: "d41d8cd98f00b204e9800998ecf8427e",
-  duration: 50,
-  ...overrides,
-});
+// Helper functions - separate functions for ok:true and ok:false states
 
-const mockSendBatchResult = (
-  overrides: Partial<SqsSendBatchResult> = {},
-): SqsSendBatchResult => ({
-  kind: "sqs:send-batch" as const,
-  ok: false,
-  successful: [
+function createSuccessSendResult(
+  messageId: string,
+  md5OfBody: string,
+): SqsSendResult {
+  return {
+    kind: "sqs:send" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    messageId,
+    md5OfBody,
+    sequenceNumber: null,
+    duration: 50,
+  };
+}
+
+function createFailureSendResult(): SqsSendResult {
+  return {
+    kind: "sqs:send" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MockSqsConnectionError("Connection failed"),
+    messageId: null,
+    md5OfBody: null,
+    sequenceNumber: null,
+    duration: 0,
+  };
+}
+
+function createSuccessSendBatchResult(
+  successful: readonly SqsBatchSuccessEntry[],
+  failed: readonly SqsBatchFailedEntry[],
+): SqsSendBatchResult {
+  return {
+    kind: "sqs:send-batch" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    successful,
+    failed,
+    duration: 100,
+  };
+}
+
+function createFailureSendBatchResult(): SqsSendBatchResult {
+  return {
+    kind: "sqs:send-batch" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MockSqsConnectionError("Connection failed"),
+    successful: null,
+    failed: null,
+    duration: 0,
+  };
+}
+
+function createSuccessReceiveResult(
+  messages: readonly SqsMessage[],
+): SqsReceiveResult {
+  return {
+    kind: "sqs:receive" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    messages,
+    duration: 200,
+  };
+}
+
+function createFailureReceiveResult(): SqsReceiveResult {
+  return {
+    kind: "sqs:receive" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MockSqsConnectionError("Connection failed"),
+    messages: null,
+    duration: 0,
+  };
+}
+
+function createSuccessDeleteResult(): SqsDeleteResult {
+  return {
+    kind: "sqs:delete" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    duration: 30,
+  };
+}
+
+function createFailureDeleteResult(): SqsDeleteResult {
+  return {
+    kind: "sqs:delete" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MockSqsConnectionError("Connection failed"),
+    duration: 0,
+  };
+}
+
+function createSuccessDeleteBatchResult(
+  successful: readonly string[],
+  failed: readonly SqsBatchFailedEntry[],
+): SqsDeleteBatchResult {
+  return {
+    kind: "sqs:delete-batch" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    successful,
+    failed,
+    duration: 80,
+  };
+}
+
+function createFailureDeleteBatchResult(): SqsDeleteBatchResult {
+  return {
+    kind: "sqs:delete-batch" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MockSqsConnectionError("Connection failed"),
+    successful: null,
+    failed: null,
+    duration: 0,
+  };
+}
+
+function createSuccessEnsureQueueResult(
+  queueUrl: string,
+): SqsEnsureQueueResult {
+  return {
+    kind: "sqs:ensure-queue" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    queueUrl,
+    duration: 150,
+  };
+}
+
+function createFailureEnsureQueueResult(): SqsEnsureQueueResult {
+  return {
+    kind: "sqs:ensure-queue" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MockSqsConnectionError("Connection failed"),
+    queueUrl: null,
+    duration: 0,
+  };
+}
+
+function createSuccessDeleteQueueResult(): SqsDeleteQueueResult {
+  return {
+    kind: "sqs:delete-queue" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    duration: 120,
+  };
+}
+
+function createFailureDeleteQueueResult(): SqsDeleteQueueResult {
+  return {
+    kind: "sqs:delete-queue" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MockSqsConnectionError("Connection failed"),
+    duration: 0,
+  };
+}
+
+const testMessages: SqsMessage[] = [
+  {
+    messageId: "msg-recv-1",
+    receiptHandle: "handle-1",
+    body: '{"action": "test"}',
+    md5OfBody: "hash1",
+    attributes: {},
+  },
+  {
+    messageId: "msg-recv-2",
+    receiptHandle: "handle-2",
+    body: '{"action": "test2"}',
+    md5OfBody: "hash2",
+    attributes: {},
+  },
+];
+
+const dummySendResult = createSuccessSendResult(
+  "msg-abc123",
+  "d41d8cd98f00b204e9800998ecf8427e",
+);
+const dummySendBatchResult = createSuccessSendBatchResult(
+  [
     { id: "1", messageId: "msg-1" },
     { id: "2", messageId: "msg-2" },
   ],
-  failed: [
-    { id: "3", code: "InvalidMessageContents", message: "Invalid" },
-  ],
-  duration: 100,
-  ...overrides,
-});
-
-const mockReceiveResult = (
-  overrides: Partial<Omit<SqsReceiveResult, "messages">> & {
-    messages?: SqsMessage[];
-  } = {},
-): SqsReceiveResult => {
-  const { messages: rawMessages, ...rest } = overrides;
-  const defaultMessages: SqsMessage[] = [
-    {
-      messageId: "msg-recv-1",
-      receiptHandle: "handle-1",
-      body: '{"action": "test"}',
-      md5OfBody: "hash1",
-      attributes: {},
-    },
-    {
-      messageId: "msg-recv-2",
-      receiptHandle: "handle-2",
-      body: '{"action": "test2"}',
-      md5OfBody: "hash2",
-      attributes: {},
-    },
-  ];
-  return {
-    kind: "sqs:receive" as const,
-    ok: false,
-    messages: createMockMessages(rawMessages ?? defaultMessages),
-    duration: 200,
-    ...rest,
-  };
-};
-
-const mockDeleteResult = (
-  overrides: Partial<SqsDeleteResult> = {},
-): SqsDeleteResult => ({
-  kind: "sqs:delete" as const,
-  ok: false,
-  duration: 30,
-  ...overrides,
-});
-
-const mockDeleteBatchResult = (
-  overrides: Partial<SqsDeleteBatchResult> = {},
-): SqsDeleteBatchResult => ({
-  kind: "sqs:delete-batch" as const,
-  ok: false,
-  successful: ["1"],
-  failed: [{ id: "2", code: "ReceiptHandleIsInvalid", message: "Invalid" }],
-  duration: 80,
-  ...overrides,
-});
-
-const mockEnsureQueueResult = (
-  overrides: Partial<SqsEnsureQueueResult> = {},
-): SqsEnsureQueueResult => ({
-  kind: "sqs:ensure-queue" as const,
-  ok: false,
-  queueUrl: "https://sqs.us-east-1.amazonaws.com/123456789/test-queue",
-  duration: 150,
-  ...overrides,
-});
-
-const mockDeleteQueueResult = (
-  overrides: Partial<SqsDeleteQueueResult> = {},
-): SqsDeleteQueueResult => ({
-  kind: "sqs:delete-queue" as const,
-  ok: false,
-  duration: 120,
-  ...overrides,
-});
-
-const dummySendResult = mockSendResult();
-const dummySendBatchResult = mockSendBatchResult();
-const dummyReceiveResult = mockReceiveResult();
-const dummyDeleteResult = mockDeleteResult();
-const dummyDeleteBatchResult = mockDeleteBatchResult();
-const dummyEnsureQueueResult = mockEnsureQueueResult();
-const dummyDeleteQueueResult = mockDeleteQueueResult();
+  [{ id: "3", code: "InvalidMessageContents", message: "Invalid" }],
+);
+const dummyReceiveResult = createSuccessReceiveResult(testMessages);
+const _dummyDeleteResult = createSuccessDeleteResult();
+const dummyDeleteBatchResult = createSuccessDeleteBatchResult(
+  ["1"],
+  [{ id: "2", code: "ReceiptHandleIsInvalid", message: "Invalid" }],
+);
+const dummyEnsureQueueResult = createSuccessEnsureQueueResult(
+  "https://sqs.us-east-1.amazonaws.com/123456789/test-queue",
+);
+const _dummyDeleteQueueResult = createSuccessDeleteQueueResult();
 
 // Send result failures
 export const sendToBeOk = scenario("SQS Send - toBeOk failure", {
   tags: ["failure", "sqs"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummySendResult).toBeOk();
+    expect(createFailureSendResult()).toBeOk();
   })
   .build();
 
@@ -189,7 +283,7 @@ export const sendBatchToBeOk = scenario("SQS SendBatch - toBeOk failure", {
   tags: ["failure", "sqs"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummySendBatchResult).toBeOk();
+    expect(createFailureSendBatchResult()).toBeOk();
   })
   .build();
 
@@ -216,7 +310,7 @@ export const receiveToBeOk = scenario("SQS Receive - toBeOk failure", {
   tags: ["failure", "sqs"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyReceiveResult).toBeOk();
+    expect(createFailureReceiveResult()).toBeOk();
   })
   .build();
 
@@ -252,7 +346,7 @@ export const deleteToBeOk = scenario("SQS Delete - toBeOk failure", {
   tags: ["failure", "sqs"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyDeleteResult).toBeOk();
+    expect(createFailureDeleteResult()).toBeOk();
   })
   .build();
 
@@ -261,7 +355,7 @@ export const deleteBatchToBeOk = scenario("SQS DeleteBatch - toBeOk failure", {
   tags: ["failure", "sqs"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyDeleteBatchResult).toBeOk();
+    expect(createFailureDeleteBatchResult()).toBeOk();
   })
   .build();
 
@@ -288,7 +382,7 @@ export const ensureQueueToBeOk = scenario("SQS EnsureQueue - toBeOk failure", {
   tags: ["failure", "sqs"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyEnsureQueueResult).toBeOk();
+    expect(createFailureEnsureQueueResult()).toBeOk();
   })
   .build();
 
@@ -315,7 +409,7 @@ export const deleteQueueToBeOk = scenario("SQS DeleteQueue - toBeOk failure", {
   tags: ["failure", "sqs"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyDeleteQueueResult).toBeOk();
+    expect(createFailureDeleteQueueResult()).toBeOk();
   })
   .build();
 
@@ -342,8 +436,7 @@ export const notToBeOk = scenario("SQS - not.toBeOk failure", {
   tags: ["failure", "sqs"],
 })
   .step("not.toBeOk fails when ok is true", () => {
-    const okResult = mockSendResult({ ok: true });
-    expect(okResult).not.toBeOk();
+    expect(dummySendResult).not.toBeOk();
   })
   .build();
 

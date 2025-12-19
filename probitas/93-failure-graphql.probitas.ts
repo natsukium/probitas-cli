@@ -5,21 +5,37 @@
  * All scenarios are expected to fail - they use dummy responses to trigger failures.
  */
 import { expect, scenario } from "jsr:@probitas/probitas@^0";
-import type { GraphqlResponse } from "jsr:@probitas/client-graphql@^0";
+import {
+  GraphqlExecutionError,
+  type GraphqlResponse,
+  type GraphqlResponseError,
+  type GraphqlResponseSuccess,
+} from "jsr:@probitas/client-graphql@^0";
 
-// Helper to create mock GraphQL response
-function createMockResponse(
-  overrides: Partial<GraphqlResponse> = {},
-): GraphqlResponse {
-  const defaultResponse: GraphqlResponse = {
+// Helper to create mock GraphQL error response
+function createMockErrorResponse(): GraphqlResponseError {
+  const error = new GraphqlExecutionError([
+    {
+      message: "Field 'user' not found",
+      path: ["query", "user"],
+      locations: [],
+      extensions: {},
+    },
+    {
+      message: "Unauthorized access",
+      path: ["query", "admin"],
+      locations: [],
+      extensions: {},
+    },
+  ]);
+  const response: GraphqlResponseError = {
     kind: "graphql",
+    processed: true,
     ok: false,
+    error,
+    url: "http://example.com/graphql",
     status: 200,
     headers: new Headers({ "content-type": "application/json" }),
-    errors: [
-      { message: "Field 'user' not found", path: ["query", "user"] },
-      { message: "Unauthorized access", path: ["query", "admin"] },
-    ],
     extensions: { code: "VALIDATION_ERROR" },
     // deno-lint-ignore no-explicit-any
     data: <T = any>(): T | null => null,
@@ -30,10 +46,33 @@ function createMockResponse(
         headers: { "content-type": "application/json" },
       }),
   };
-  return { ...defaultResponse, ...overrides };
+  return response;
 }
 
-const dummyResponse = createMockResponse();
+// Helper to create mock GraphQL success response
+function createMockSuccessResponse(): GraphqlResponseSuccess {
+  const response: GraphqlResponseSuccess = {
+    kind: "graphql",
+    processed: true,
+    ok: true,
+    error: null,
+    url: "http://example.com/graphql",
+    status: 200,
+    headers: new Headers({ "content-type": "application/json" }),
+    extensions: null,
+    // deno-lint-ignore no-explicit-any
+    data: <T = any>(): T | null => ({ user: { name: "Alice" } }) as T,
+    duration: 100,
+    raw: () =>
+      new Response('{"data":{"user":{"name":"Alice"}}}', {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+  };
+  return response;
+}
+
+const dummyResponse: GraphqlResponse = createMockErrorResponse();
 
 export const toBeOk = scenario("GraphQL - toBeOk failure", {
   tags: ["failure", "graphql"],
@@ -78,29 +117,22 @@ export const toHaveDataProperty = scenario(
   })
   .build();
 
-export const toHaveErrorsEmpty = scenario(
-  "GraphQL - toHaveErrorsEmpty failure",
+export const toHaveErrorNull = scenario(
+  "GraphQL - toHaveErrorNull failure",
   { tags: ["failure", "graphql"] },
 )
-  .step("toHaveErrorsEmpty fails when errors exist", () => {
-    expect(dummyResponse).toHaveErrorsEmpty();
+  .step("toHaveErrorNull fails when error exists", () => {
+    expect(dummyResponse).toHaveErrorNull();
   })
   .build();
 
-export const toHaveErrorCount = scenario("GraphQL - toHaveErrorCount failure", {
-  tags: ["failure", "graphql"],
-})
-  .step("toHaveErrorCount fails with wrong count", () => {
-    expect(dummyResponse).toHaveErrorCount(5);
-  })
-  .build();
-
-export const toHaveErrorCountLessThan = scenario(
-  "GraphQL - toHaveErrorCountLessThan failure",
+export const toHaveErrorPresent = scenario(
+  "GraphQL - toHaveErrorPresent failure",
   { tags: ["failure", "graphql"] },
 )
-  .step("toHaveErrorCountLessThan fails", () => {
-    expect(dummyResponse).toHaveErrorCountLessThan(2);
+  .step("toHaveErrorPresent fails when no error", () => {
+    const okResponse: GraphqlResponse = createMockSuccessResponse();
+    expect(okResponse).toHaveErrorPresent();
   })
   .build();
 
@@ -143,26 +175,18 @@ export const notToBeOk = scenario("GraphQL - not.toBeOk failure", {
   tags: ["failure", "graphql"],
 })
   .step("not.toBeOk fails when no errors", () => {
-    const okResponse = createMockResponse({
-      ok: true,
-      errors: null,
-      // deno-lint-ignore no-explicit-any
-      data: <T = any>(): T | null => ({ user: { name: "Alice" } }) as T,
-    });
+    const okResponse: GraphqlResponse = createMockSuccessResponse();
     expect(okResponse).not.toBeOk();
   })
   .build();
 
-export const notToHaveErrorsEmpty = scenario(
-  "GraphQL - not.toHaveErrorsEmpty failure",
+export const notToHaveErrorNull = scenario(
+  "GraphQL - not.toHaveErrorNull failure",
   { tags: ["failure", "graphql"] },
 )
-  .step("not.toHaveErrorsEmpty fails when no errors", () => {
-    const okResponse = createMockResponse({
-      ok: true,
-      errors: null,
-    });
-    expect(okResponse).not.toHaveErrorsEmpty();
+  .step("not.toHaveErrorNull fails when no error", () => {
+    const okResponse: GraphqlResponse = createMockSuccessResponse();
+    expect(okResponse).not.toHaveErrorNull();
   })
   .build();
 
@@ -172,13 +196,12 @@ export default [
   toHaveHeadersMatching,
   toHaveHeadersProperty,
   toHaveDataProperty,
-  toHaveErrorsEmpty,
-  toHaveErrorCount,
-  toHaveErrorCountLessThan,
+  toHaveErrorNull,
+  toHaveErrorPresent,
   toHaveExtensionsMatching,
   toHaveExtensionsProperty,
   toHaveDuration,
   toHaveDurationLessThan,
   notToBeOk,
-  notToHaveErrorsEmpty,
+  notToHaveErrorNull,
 ];

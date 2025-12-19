@@ -5,48 +5,79 @@
  * All scenarios are expected to fail - they use dummy results to trigger failures.
  */
 import { expect, scenario } from "jsr:@probitas/probitas@^0";
-import type { SqlQueryResult } from "jsr:@probitas/client-sql@^0";
+import {
+  SqlError,
+  type SqlQueryResult,
+  type SqlQueryResultError,
+  type SqlQueryResultSuccess,
+} from "jsr:@probitas/client-sql@^0";
 
-// Helper to create mock SQL result
-function createMockResult(
-  overrides: Partial<{
-    ok: boolean;
-    rows: unknown[];
-    rowCount: number;
-    duration: number;
-    lastInsertId?: unknown;
-    warnings?: unknown[];
-  }> = {},
-): SqlQueryResult {
-  const defaultResult: SqlQueryResult = {
-    kind: "sql",
-    ok: false,
-    rows: [
-      { id: 1, name: "Alice", email: "alice@example.com" },
-      { id: 2, name: "Bob", email: "bob@example.com" },
-    ] as unknown as SqlQueryResult["rows"],
-    rowCount: 2,
-    duration: 50,
-    lastInsertId: undefined,
-    warnings: ["Warning: Deprecated syntax used"],
-    map: <U>(fn: (row: Record<string, unknown>) => U) =>
-      (defaultResult.rows as Record<string, unknown>[]).map(fn),
-    as: () => defaultResult.rows as unknown as never[],
-  };
-
+// Helper to create mock SQL error result (error result has no rows)
+function createMockErrorResult(): SqlQueryResultError {
   return {
-    ...defaultResult,
-    ...overrides,
-  } as SqlQueryResult;
+    kind: "sql" as const,
+    processed: true as const,
+    ok: false as const,
+    error: new SqlError("Query failed", "query"),
+    rows: [] as const,
+    rowCount: 0 as const,
+    duration: 50,
+    lastInsertId: null,
+    warnings: null,
+    map: <U>(_fn: (row: Record<string, unknown>) => U) => [] as U[],
+    as: <T>() => [] as T[],
+  };
 }
 
-const dummyResult = createMockResult();
+// Helper to create mock SQL success result (with data for failure tests)
+function createMockSuccessResult(): SqlQueryResultSuccess {
+  const rows = [
+    { id: 1, name: "Alice", email: "alice@example.com" },
+    { id: 2, name: "Bob", email: "bob@example.com" },
+  ];
+  return {
+    kind: "sql",
+    processed: true,
+    ok: true,
+    error: null,
+    rows,
+    rowCount: 2,
+    duration: 30,
+    lastInsertId: null,
+    warnings: ["Warning: Deprecated syntax used"],
+    map: <U>(fn: (row: Record<string, unknown>) => U) =>
+      (rows as Record<string, unknown>[]).map(fn),
+    as: <T>() => rows as T[],
+  };
+}
+
+// Helper to create empty SQL success result
+function createMockEmptyResult(): SqlQueryResultSuccess {
+  const rows: unknown[] = [];
+  return {
+    kind: "sql",
+    processed: true,
+    ok: true,
+    error: null,
+    rows,
+    rowCount: 0,
+    duration: 10,
+    lastInsertId: null,
+    warnings: null,
+    map: <U>(_fn: (row: Record<string, unknown>) => U) => [] as U[],
+    as: <T>() => [] as T[],
+  };
+}
+
+// Use success result for testing failures (it has actual data to test against)
+const dummyResult: SqlQueryResult = createMockSuccessResult();
+const errorResult: SqlQueryResult = createMockErrorResult();
 
 export const toBeOk = scenario("SQL - toBeOk failure", {
   tags: ["failure", "sql"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyResult).toBeOk();
+    expect(errorResult).toBeOk();
   })
   .build();
 
@@ -96,7 +127,7 @@ export const toHaveLastInsertIdPresent = scenario(
   "SQL - toHaveLastInsertIdPresent failure",
   { tags: ["failure", "sql"] },
 )
-  .step("toHaveLastInsertIdPresent fails when undefined", () => {
+  .step("toHaveLastInsertIdPresent fails when null", () => {
     expect(dummyResult).toHaveLastInsertIdPresent();
   })
   .build();
@@ -123,7 +154,7 @@ export const toHaveDurationLessThan = scenario(
   { tags: ["failure", "sql"] },
 )
   .step("toHaveDurationLessThan fails", () => {
-    expect(dummyResult).toHaveDurationLessThan(30);
+    expect(dummyResult).toHaveDurationLessThan(20);
   })
   .build();
 
@@ -131,8 +162,7 @@ export const notToBeOk = scenario("SQL - not.toBeOk failure", {
   tags: ["failure", "sql"],
 })
   .step("not.toBeOk fails when ok is true", () => {
-    const okResult = createMockResult({ ok: true });
-    expect(okResult).not.toBeOk();
+    expect(dummyResult).not.toBeOk();
   })
   .build();
 
@@ -141,10 +171,7 @@ export const notToHaveRowsEmpty = scenario(
   { tags: ["failure", "sql"] },
 )
   .step("not.toHaveRowsEmpty fails when rows empty", () => {
-    const emptyResult = createMockResult({
-      rows: [],
-      rowCount: 0,
-    });
+    const emptyResult: SqlQueryResult = createMockEmptyResult();
     expect(emptyResult).not.toHaveRowsEmpty();
   })
   .build();

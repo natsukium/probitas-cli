@@ -5,9 +5,9 @@
  * - Creating a scenario with a name
  * - Defining steps with explicit names
  * - Passing data between steps via ctx.previous
- * - Simple validation with thrown errors
+ * - Validation using expect() assertions
  */
-import { scenario } from "jsr:@probitas/probitas@^0";
+import { expect, scenario } from "jsr:@probitas/probitas@^0";
 
 export default scenario("Basic Example")
   .step("Initialize data", () => {
@@ -27,14 +27,10 @@ export default scenario("Basic Example")
   })
   .step("Validate results", (ctx) => {
     const { processed, count } = ctx.previous;
-    if (processed.length !== count) {
-      throw new Error(
-        `Expected ${count} items, got ${processed.length}`,
-      );
-    }
-    if (!processed.every((item) => item === item.toUpperCase())) {
-      throw new Error("Not all items are uppercase");
-    }
+    expect(processed).toHaveLength(count);
+    // Verify all items are uppercase
+    const allUppercase = processed.every((item) => item === item.toUpperCase());
+    expect(allUppercase).toBe(true);
     return { success: true };
   })
   .build();

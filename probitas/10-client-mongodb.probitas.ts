@@ -43,9 +43,7 @@ export default scenario("MongoDB Client Example", {
 
     expect(result)
       .toBeOk()
-      .toHaveInsertedIdSatisfying((id) => {
-        if (!id) throw new Error("Expected insertedId");
-      });
+      .toHaveInsertedIdMatching(/.+/); // Verify insertedId is present and non-empty
   })
   .step("Insert many documents", async (ctx) => {
     const { mongo } = ctx.resources;
@@ -87,18 +85,7 @@ export default scenario("MongoDB Client Example", {
     expect(result)
       .toBeOk()
       .toHaveDocsCount(2)
-      .toHaveDocsSatisfying((docs) => {
-        if (
-          !Array.isArray(docs) ||
-          docs.length === 0 ||
-          typeof docs[0] !== "object" ||
-          docs[0] === null ||
-          !("age" in docs[0]) ||
-          (docs[0] as { age: number }).age !== 35
-        ) {
-          throw new Error("Expected oldest user first");
-        }
-      });
+      .toHaveDocsMatching([{ age: 35 }]); // First doc should be oldest user (age: 35)
   })
   .step("Update one document", async (ctx) => {
     const { mongo } = ctx.resources;
@@ -120,11 +107,7 @@ export default scenario("MongoDB Client Example", {
       { $inc: { age: 1 } },
     );
 
-    // NOTE: modifiedAtLeast is not available in current API
-    expect(result).toBeOk();
-    if (result.modifiedCount < 1) {
-      throw new Error("Expected at least 1 modified document");
-    }
+    expect(result).toBeOk().toHaveModifiedCountGreaterThanOrEqual(1);
   })
   .step("Count documents", async (ctx) => {
     const { mongo } = ctx.resources;

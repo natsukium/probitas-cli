@@ -5,6 +5,7 @@
  * Uses LocalStack for AWS SQS emulation
  */
 import { client, expect, scenario, Skip } from "jsr:@probitas/probitas@^0";
+import type { SqsMessage } from "jsr:@probitas/client-sqs@^0";
 
 const BASE_URL = "http://localhost:4566";
 
@@ -68,11 +69,7 @@ export default scenario("SQS Client Example", {
       { id: "3", body: JSON.stringify({ index: 3 }) },
     ];
     const result = await sqs.sendBatch(messages);
-    expect(result).toBeOk().toHaveSuccessfulSatisfying((msgs: unknown[]) => {
-      if (msgs.length !== 3) {
-        throw new Error(`Expected 3 successful messages, got ${msgs.length}`);
-      }
-    });
+    expect(result).toBeOk().toHaveSuccessfulCount(3);
   })
   .step("Receive messages", async (ctx) => {
     const { sqs } = ctx.resources;
@@ -92,10 +89,13 @@ export default scenario("SQS Client Example", {
       waitTimeSeconds: 1,
     });
 
-    if (result.messages.length > 0) {
-      const msg = result.messages[0];
-      await sqs.delete(msg.receiptHandle);
-    }
+    expect(result)
+      .toBeOk()
+      .toHaveMessagesCountGreaterThanOrEqual(1)
+      .toHaveMessagesSatisfying(async (messages) => {
+        const msgs = messages as SqsMessage[];
+        await sqs.delete(msgs[0].receiptHandle);
+      });
   })
   .step("Receive with message attributes", async (ctx) => {
     const { sqs } = ctx.resources;
@@ -105,9 +105,14 @@ export default scenario("SQS Client Example", {
       waitTimeSeconds: 1,
     });
 
-    for (const msg of result.messages) {
-      await sqs.delete(msg.receiptHandle);
-    }
+    expect(result)
+      .toBeOk()
+      .toHaveMessagesSatisfying(async (messages) => {
+        const msgs = messages as SqsMessage[];
+        for (const msg of msgs) {
+          await sqs.delete(msg.receiptHandle);
+        }
+      });
   })
   .step("Send with delay", async (ctx) => {
     const { sqs } = ctx.resources;

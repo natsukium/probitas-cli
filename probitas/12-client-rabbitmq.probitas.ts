@@ -5,6 +5,7 @@
  * Credentials: guest/guest
  */
 import { client, expect, scenario, Skip } from "jsr:@probitas/probitas@^0";
+import type { RabbitMqMessage } from "jsr:@probitas/client-rabbitmq@^0";
 
 const HOST = "localhost";
 const PORT = 5672;
@@ -78,23 +79,23 @@ export default scenario("RabbitMQ Client Example", {
     const channel = await mq.channel();
     const result = await channel.get("test_queue");
 
-    expect(result).toBeOk().toHaveMessagePresent();
-
-    if (result.message) {
-      await channel.ack(result.message);
-    }
+    expect(result)
+      .toBeOk()
+      .toHaveMessagePresent()
+      .toHaveMessageSatisfying(async (msg) => {
+        await channel.ack(msg as RabbitMqMessage);
+      });
     await channel.close();
   })
   .step("Get remaining messages", async (ctx) => {
     const { mq } = ctx.resources;
     const channel = await mq.channel();
 
-    let consumed = 0;
-    while (consumed < 5) {
+    // Drain remaining messages from the queue
+    for (let i = 0; i < 5; i++) {
       const result = await channel.get("test_queue");
-      if (!result.message) break;
+      if (!result.ok || !result.message) break;
       await channel.ack(result.message);
-      consumed++;
     }
     await channel.close();
   })
@@ -132,11 +133,12 @@ export default scenario("RabbitMQ Client Example", {
     const channel = await mq.channel();
     const result = await channel.get("test_bound_queue");
 
-    expect(result).toBeOk().toHaveMessagePresent();
-
-    if (result.message) {
-      await channel.ack(result.message);
-    }
+    expect(result)
+      .toBeOk()
+      .toHaveMessagePresent()
+      .toHaveMessageSatisfying(async (msg) => {
+        await channel.ack(msg as RabbitMqMessage);
+      });
     await channel.close();
   })
   .step("Message with properties", async (ctx) => {
@@ -151,11 +153,12 @@ export default scenario("RabbitMQ Client Example", {
     });
 
     const result = await channel.get("test_queue");
-    expect(result).toBeOk().toHaveMessagePresent();
-
-    if (result.message) {
-      await channel.ack(result.message);
-    }
+    expect(result)
+      .toBeOk()
+      .toHaveMessagePresent()
+      .toHaveMessageSatisfying(async (msg) => {
+        await channel.ack(msg as RabbitMqMessage);
+      });
     await channel.close();
   })
   .build();

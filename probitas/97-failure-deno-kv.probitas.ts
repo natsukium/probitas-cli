@@ -5,114 +5,160 @@
  * All scenarios are expected to fail - they use dummy results to trigger failures.
  */
 import { expect, scenario } from "jsr:@probitas/probitas@^0";
-import type {
-  DenoKvAtomicResult,
-  DenoKvDeleteResult,
-  DenoKvEntries,
-  DenoKvEntry,
-  DenoKvGetResult,
-  DenoKvListResult,
-  DenoKvSetResult,
+import {
+  type DenoKvAtomicResult,
+  DenoKvConnectionError,
+  type DenoKvDeleteResult,
+  type DenoKvEntry,
+  type DenoKvGetResult,
+  type DenoKvListResult,
+  type DenoKvSetResult,
 } from "jsr:@probitas/client-deno-kv@^0";
 
-// Helper to create DenoKvEntries
-function createMockEntries<T>(entries: DenoKvEntry<T>[]): DenoKvEntries<T> {
-  const arr = [...entries] as DenoKvEntry<T>[] & {
-    first(): DenoKvEntry<T> | undefined;
-    firstOrThrow(): DenoKvEntry<T>;
-    last(): DenoKvEntry<T> | undefined;
-    lastOrThrow(): DenoKvEntry<T>;
+// Helper functions - separate functions for ok:true and ok:false states
+
+function createSuccessGetResult<T>(
+  key: Deno.KvKey,
+  value: T | null,
+  versionstamp: string | null,
+): DenoKvGetResult<T> {
+  return {
+    kind: "deno-kv:get" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    key,
+    value,
+    versionstamp,
+    duration: 3,
   };
-  arr.first = function () {
-    return this[0];
-  };
-  arr.firstOrThrow = function () {
-    if (this.length === 0) throw new Error("No entries available");
-    return this[0];
-  };
-  arr.last = function () {
-    return this[this.length - 1];
-  };
-  arr.lastOrThrow = function () {
-    if (this.length === 0) throw new Error("No entries available");
-    return this[this.length - 1];
-  };
-  return arr as unknown as DenoKvEntries<T>;
 }
 
-// Mock helpers
-const mockGetResult = <T>(
-  overrides: Partial<DenoKvGetResult<T>> = {},
-): DenoKvGetResult<T> => ({
-  kind: "deno-kv:get" as const,
-  ok: false,
-  key: ["users", "123"],
-  value: { name: "Alice", age: 30 } as T,
-  versionstamp: "00000001",
-  duration: 3,
-  ...overrides,
-});
+function createFailureGetResult<T>(): DenoKvGetResult<T> {
+  return {
+    kind: "deno-kv:get" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new DenoKvConnectionError("Connection failed"),
+    key: null,
+    value: null,
+    versionstamp: null,
+    duration: 0,
+  };
+}
 
-const mockSetResult = (
-  overrides: Partial<DenoKvSetResult> = {},
-): DenoKvSetResult => ({
-  kind: "deno-kv:set" as const,
-  ok: false,
-  versionstamp: "00000002",
-  duration: 5,
-  ...overrides,
-});
+function createSuccessSetResult(versionstamp: string): DenoKvSetResult {
+  return {
+    kind: "deno-kv:set" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    versionstamp,
+    duration: 5,
+  };
+}
 
-const mockDeleteResult = (
-  overrides: Partial<DenoKvDeleteResult> = {},
-): DenoKvDeleteResult => ({
-  kind: "deno-kv:delete" as const,
-  ok: false,
-  duration: 2,
-  ...overrides,
-});
+function createFailureSetResult(): DenoKvSetResult {
+  return {
+    kind: "deno-kv:set" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new DenoKvConnectionError("Connection failed"),
+    versionstamp: null,
+    duration: 0,
+  };
+}
 
-const mockListResult = <T>(
-  overrides: Partial<Omit<DenoKvListResult<T>, "entries">> & {
-    entries?: DenoKvEntry<T>[];
-  } = {},
-): DenoKvListResult<T> => {
-  const { entries: rawEntries, ...rest } = overrides;
-  const defaultEntries: DenoKvEntry<T>[] = [
-    { key: ["users", "1"], value: { name: "Alice" } as T, versionstamp: "v1" },
-    { key: ["users", "2"], value: { name: "Bob" } as T, versionstamp: "v2" },
-  ];
+function createSuccessDeleteResult(): DenoKvDeleteResult {
+  return {
+    kind: "deno-kv:delete" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    duration: 2,
+  };
+}
+
+function createFailureDeleteResult(): DenoKvDeleteResult {
+  return {
+    kind: "deno-kv:delete" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new DenoKvConnectionError("Connection failed"),
+    duration: 0,
+  };
+}
+
+function createSuccessListResult<T>(
+  entries: readonly DenoKvEntry<T>[],
+): DenoKvListResult<T> {
   return {
     kind: "deno-kv:list" as const,
-    ok: false,
-    entries: createMockEntries(rawEntries ?? defaultEntries),
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    entries,
     duration: 10,
-    ...rest,
   };
-};
+}
 
-const mockAtomicResult = (
-  overrides: Partial<DenoKvAtomicResult> = {},
-): DenoKvAtomicResult => ({
-  kind: "deno-kv:atomic" as const,
-  ok: false,
-  versionstamp: undefined,
-  duration: 8,
-  ...overrides,
-});
+function createFailureListResult<T>(): DenoKvListResult<T> {
+  return {
+    kind: "deno-kv:list" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new DenoKvConnectionError("Connection failed"),
+    entries: [],
+    duration: 0,
+  };
+}
 
-const dummyGetResult = mockGetResult();
-const dummySetResult = mockSetResult();
-const dummyDeleteResult = mockDeleteResult();
-const dummyListResult = mockListResult();
-const dummyAtomicResult = mockAtomicResult();
+function createCheckFailedAtomicResult(): DenoKvAtomicResult {
+  return {
+    kind: "deno-kv:atomic" as const,
+    processed: true as const,
+    ok: false as const,
+    error: null,
+    versionstamp: null,
+    duration: 8,
+  };
+}
+
+function createFailureAtomicResult(): DenoKvAtomicResult {
+  return {
+    kind: "deno-kv:atomic" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new DenoKvConnectionError("Connection failed"),
+    versionstamp: null,
+    duration: 0,
+  };
+}
+
+interface TestUser {
+  name: string;
+  age?: number;
+}
+
+const dummyGetResult = createSuccessGetResult<TestUser>(
+  ["users", "123"],
+  { name: "Alice", age: 30 },
+  "00000001",
+);
+const dummySetResult = createSuccessSetResult("00000002");
+const _dummyDeleteResult = createSuccessDeleteResult();
+const dummyListResult = createSuccessListResult<TestUser>([
+  { key: ["users", "1"], value: { name: "Alice" }, versionstamp: "v1" },
+  { key: ["users", "2"], value: { name: "Bob" }, versionstamp: "v2" },
+]);
+const dummyAtomicResult = createCheckFailedAtomicResult();
 
 // GET result failures
 export const getToBeOk = scenario("Deno KV GET - toBeOk failure", {
   tags: ["failure", "deno-kv"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyGetResult).toBeOk();
+    expect(createFailureGetResult()).toBeOk();
   })
   .build();
 
@@ -147,7 +193,7 @@ export const setToBeOk = scenario("Deno KV SET - toBeOk failure", {
   tags: ["failure", "deno-kv"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummySetResult).toBeOk();
+    expect(createFailureSetResult()).toBeOk();
   })
   .build();
 
@@ -165,7 +211,7 @@ export const deleteToBeOk = scenario("Deno KV DELETE - toBeOk failure", {
   tags: ["failure", "deno-kv"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyDeleteResult).toBeOk();
+    expect(createFailureDeleteResult()).toBeOk();
   })
   .build();
 
@@ -174,7 +220,7 @@ export const listToBeOk = scenario("Deno KV LIST - toBeOk failure", {
   tags: ["failure", "deno-kv"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyListResult).toBeOk();
+    expect(createFailureListResult()).toBeOk();
   })
   .build();
 
@@ -201,7 +247,7 @@ export const atomicToBeOk = scenario("Deno KV ATOMIC - toBeOk failure", {
   tags: ["failure", "deno-kv"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyAtomicResult).toBeOk();
+    expect(createFailureAtomicResult()).toBeOk();
   })
   .build();
 
@@ -237,8 +283,7 @@ export const notToBeOk = scenario("Deno KV - not.toBeOk failure", {
   tags: ["failure", "deno-kv"],
 })
   .step("not.toBeOk fails when ok is true", () => {
-    const okResult = mockGetResult({ ok: true });
-    expect(okResult).not.toBeOk();
+    expect(dummyGetResult).not.toBeOk();
   })
   .build();
 

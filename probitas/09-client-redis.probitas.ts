@@ -27,14 +27,14 @@ export default scenario("Redis Client Example", {
     const { redis } = ctx.resources;
     // Return cleanup function to delete all test keys
     return async () => {
-      await redis.del(
+      await redis.del([
         "test:key",
         "test:expiring",
         "test:counter",
         "test:hash",
         "test:list",
         "test:set",
-      );
+      ]);
     };
   })
   .step("SET and GET string", async (ctx) => {
@@ -101,7 +101,7 @@ export default scenario("Redis Client Example", {
   })
   .step("LPUSH and LRANGE list", async (ctx) => {
     const { redis } = ctx.resources;
-    await redis.lpush("test:list", "c", "b", "a");
+    await redis.lpush("test:list", ["c", "b", "a"]);
     const result = await redis.lrange("test:list", 0, -1);
 
     expect(result).toBeOk().toHaveValueCount(3).toHaveValueContaining("a");
@@ -114,7 +114,7 @@ export default scenario("Redis Client Example", {
   })
   .step("SADD and SMEMBERS set", async (ctx) => {
     const { redis } = ctx.resources;
-    await redis.sadd("test:set", "member1", "member2", "member3");
+    await redis.sadd("test:set", ["member1", "member2", "member3"]);
     const result = await redis.smembers("test:set");
 
     expect(result).toBeOk().toHaveValueCount(3);
@@ -127,13 +127,13 @@ export default scenario("Redis Client Example", {
   })
   .step("DEL key", async (ctx) => {
     const { redis } = ctx.resources;
-    const result = await redis.del("test:key");
+    const result = await redis.del(["test:key"]);
 
     expect(result).toBeOk().toHaveValue(1);
   })
   .step("DEL non-existent key", async (ctx) => {
     const { redis } = ctx.resources;
-    const result = await redis.del("test:nonexistent:key");
+    const result = await redis.del(["test:nonexistent:key"]);
 
     expect(result).toBeOk().toHaveValue(0);
   })

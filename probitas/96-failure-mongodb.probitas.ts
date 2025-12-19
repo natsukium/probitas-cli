@@ -5,137 +5,218 @@
  * All scenarios are expected to fail - they use dummy results to trigger failures.
  */
 import { expect, scenario } from "jsr:@probitas/probitas@^0";
-import type {
-  MongoCountResult,
-  MongoDeleteResult,
-  MongoDocs,
-  MongoFindOneResult,
-  MongoFindResult,
-  MongoInsertManyResult,
-  MongoInsertOneResult,
-  MongoUpdateResult,
+import {
+  MongoConnectionError,
+  type MongoCountResult,
+  type MongoDeleteResult,
+  type MongoFindOneResult,
+  type MongoFindResult,
+  type MongoInsertManyResult,
+  type MongoInsertOneResult,
+  type MongoUpdateResult,
 } from "jsr:@probitas/client-mongodb@^0";
 
-// Helper to create MongoDocs
-function createMockDocs<T>(docs: T[]): MongoDocs<T> {
-  const arr = [...docs] as T[] & {
-    first(): T | undefined;
-    firstOrThrow(): T;
-    last(): T | undefined;
-    lastOrThrow(): T;
-  };
-  arr.first = function () {
-    return this[0];
-  };
-  arr.firstOrThrow = function () {
-    if (this.length === 0) throw new Error("No documents available");
-    return this[0];
-  };
-  arr.last = function () {
-    return this[this.length - 1];
-  };
-  arr.lastOrThrow = function () {
-    if (this.length === 0) throw new Error("No documents available");
-    return this[this.length - 1];
-  };
-  return arr as unknown as MongoDocs<T>;
-}
+// Helper functions - separate functions for ok:true and ok:false states
 
-// Mock helpers
-const mockFindResult = <T>(
-  overrides: Partial<Omit<MongoFindResult<T>, "docs">> & { docs?: T[] } = {},
-): MongoFindResult<T> => {
-  const { docs: rawDocs, ...rest } = overrides;
-  const defaultDocs: T[] = [
-    { _id: "1", name: "Alice", age: 30 },
-    { _id: "2", name: "Bob", age: 25 },
-  ] as T[];
+function createSuccessFindResult<T>(docs: readonly T[]): MongoFindResult<T> {
   return {
     kind: "mongo:find" as const,
-    ok: false,
-    docs: createMockDocs(rawDocs ?? defaultDocs),
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    docs,
     duration: 20,
-    ...rest,
   };
-};
+}
 
-const mockFindOneResult = <T>(
-  overrides: Partial<MongoFindOneResult<T>> = {},
-): MongoFindOneResult<T> => ({
-  kind: "mongo:find-one" as const,
-  ok: false,
-  doc: { _id: "1", name: "Alice", age: 30 } as T,
-  duration: 10,
-  ...overrides,
+function createFailureFindResult<T>(): MongoFindResult<T> {
+  return {
+    kind: "mongo:find" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MongoConnectionError("Connection failed"),
+    docs: null,
+    duration: 0,
+  };
+}
+
+function createSuccessFindOneResult<T>(doc: T | null): MongoFindOneResult<T> {
+  return {
+    kind: "mongo:find-one" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    doc,
+    duration: 10,
+  };
+}
+
+function createFailureFindOneResult<T>(): MongoFindOneResult<T> {
+  return {
+    kind: "mongo:find-one" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MongoConnectionError("Connection failed"),
+    doc: null,
+    duration: 0,
+  };
+}
+
+function createSuccessInsertOneResult(
+  insertedId: string,
+): MongoInsertOneResult {
+  return {
+    kind: "mongo:insert-one" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    insertedId,
+    duration: 15,
+  };
+}
+
+function createFailureInsertOneResult(): MongoInsertOneResult {
+  return {
+    kind: "mongo:insert-one" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MongoConnectionError("Connection failed"),
+    insertedId: null,
+    duration: 0,
+  };
+}
+
+function createSuccessInsertManyResult(
+  insertedIds: readonly string[],
+  insertedCount: number,
+): MongoInsertManyResult {
+  return {
+    kind: "mongo:insert-many" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    insertedIds,
+    insertedCount,
+    duration: 25,
+  };
+}
+
+function createFailureInsertManyResult(): MongoInsertManyResult {
+  return {
+    kind: "mongo:insert-many" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MongoConnectionError("Connection failed"),
+    insertedIds: null,
+    insertedCount: null,
+    duration: 0,
+  };
+}
+
+function createSuccessUpdateResult(
+  matchedCount: number,
+  modifiedCount: number,
+  upsertedId: string | null = null,
+): MongoUpdateResult {
+  return {
+    kind: "mongo:update" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    matchedCount,
+    modifiedCount,
+    upsertedId,
+    duration: 18,
+  };
+}
+
+function createFailureUpdateResult(): MongoUpdateResult {
+  return {
+    kind: "mongo:update" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MongoConnectionError("Connection failed"),
+    matchedCount: null,
+    modifiedCount: null,
+    upsertedId: null,
+    duration: 0,
+  };
+}
+
+function createSuccessDeleteResult(deletedCount: number): MongoDeleteResult {
+  return {
+    kind: "mongo:delete" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    deletedCount,
+    duration: 12,
+  };
+}
+
+function createFailureDeleteResult(): MongoDeleteResult {
+  return {
+    kind: "mongo:delete" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MongoConnectionError("Connection failed"),
+    deletedCount: null,
+    duration: 0,
+  };
+}
+
+function createSuccessCountResult(count: number): MongoCountResult {
+  return {
+    kind: "mongo:count" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    count,
+    duration: 8,
+  };
+}
+
+function createFailureCountResult(): MongoCountResult {
+  return {
+    kind: "mongo:count" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new MongoConnectionError("Connection failed"),
+    count: null,
+    duration: 0,
+  };
+}
+
+interface TestDoc {
+  _id: string;
+  name: string;
+  age: number;
+}
+
+const dummyFindResult = createSuccessFindResult<TestDoc>([
+  { _id: "1", name: "Alice", age: 30 },
+  { _id: "2", name: "Bob", age: 25 },
+]);
+const dummyFindOneResult = createSuccessFindOneResult<TestDoc>({
+  _id: "1",
+  name: "Alice",
+  age: 30,
 });
-
-const mockInsertOneResult = (
-  overrides: Partial<MongoInsertOneResult> = {},
-): MongoInsertOneResult => ({
-  kind: "mongo:insert-one" as const,
-  ok: false,
-  insertedId: "abc123",
-  duration: 15,
-  ...overrides,
-});
-
-const mockInsertManyResult = (
-  overrides: Partial<MongoInsertManyResult> = {},
-): MongoInsertManyResult => ({
-  kind: "mongo:insert-many" as const,
-  ok: false,
-  insertedIds: ["id1", "id2", "id3"],
-  insertedCount: 3,
-  duration: 25,
-  ...overrides,
-});
-
-const mockUpdateResult = (
-  overrides: Partial<MongoUpdateResult> = {},
-): MongoUpdateResult => ({
-  kind: "mongo:update" as const,
-  ok: false,
-  matchedCount: 2,
-  modifiedCount: 1,
-  upsertedId: undefined,
-  duration: 18,
-  ...overrides,
-});
-
-const mockDeleteResult = (
-  overrides: Partial<MongoDeleteResult> = {},
-): MongoDeleteResult => ({
-  kind: "mongo:delete" as const,
-  ok: false,
-  deletedCount: 3,
-  duration: 12,
-  ...overrides,
-});
-
-const mockCountResult = (
-  overrides: Partial<MongoCountResult> = {},
-): MongoCountResult => ({
-  kind: "mongo:count" as const,
-  ok: false,
-  count: 42,
-  duration: 8,
-  ...overrides,
-});
-
-const dummyFindResult = mockFindResult();
-const dummyFindOneResult = mockFindOneResult();
-const dummyInsertOneResult = mockInsertOneResult();
-const dummyInsertManyResult = mockInsertManyResult();
-const dummyUpdateResult = mockUpdateResult();
-const dummyDeleteResult = mockDeleteResult();
-const dummyCountResult = mockCountResult();
+const dummyInsertOneResult = createSuccessInsertOneResult("abc123");
+const dummyInsertManyResult = createSuccessInsertManyResult(
+  ["id1", "id2", "id3"],
+  3,
+);
+const dummyUpdateResult = createSuccessUpdateResult(2, 1, undefined);
+const dummyDeleteResult = createSuccessDeleteResult(3);
+const dummyCountResult = createSuccessCountResult(42);
 
 // Find result failures
 export const findToBeOk = scenario("MongoDB Find - toBeOk failure", {
   tags: ["failure", "mongodb"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyFindResult).toBeOk();
+    expect(createFailureFindResult()).toBeOk();
   })
   .build();
 
@@ -171,7 +252,7 @@ export const findOneToBeOk = scenario("MongoDB FindOne - toBeOk failure", {
   tags: ["failure", "mongodb"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyFindOneResult).toBeOk();
+    expect(createFailureFindOneResult()).toBeOk();
   })
   .build();
 
@@ -198,7 +279,7 @@ export const insertOneToBeOk = scenario("MongoDB InsertOne - toBeOk failure", {
   tags: ["failure", "mongodb"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyInsertOneResult).toBeOk();
+    expect(createFailureInsertOneResult()).toBeOk();
   })
   .build();
 
@@ -226,7 +307,7 @@ export const insertManyToBeOk = scenario(
   { tags: ["failure", "mongodb"] },
 )
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyInsertManyResult).toBeOk();
+    expect(createFailureInsertManyResult()).toBeOk();
   })
   .build();
 
@@ -253,7 +334,7 @@ export const updateToBeOk = scenario("MongoDB Update - toBeOk failure", {
   tags: ["failure", "mongodb"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyUpdateResult).toBeOk();
+    expect(createFailureUpdateResult()).toBeOk();
   })
   .build();
 
@@ -289,7 +370,7 @@ export const deleteToBeOk = scenario("MongoDB Delete - toBeOk failure", {
   tags: ["failure", "mongodb"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyDeleteResult).toBeOk();
+    expect(createFailureDeleteResult()).toBeOk();
   })
   .build();
 
@@ -316,7 +397,7 @@ export const countToBeOk = scenario("MongoDB Count - toBeOk failure", {
   tags: ["failure", "mongodb"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyCountResult).toBeOk();
+    expect(createFailureCountResult()).toBeOk();
   })
   .build();
 
@@ -354,8 +435,7 @@ export const notToBeOk = scenario("MongoDB - not.toBeOk failure", {
   tags: ["failure", "mongodb"],
 })
   .step("not.toBeOk fails when ok is true", () => {
-    const okResult = mockFindResult({ ok: true });
-    expect(okResult).not.toBeOk();
+    expect(dummyFindResult).not.toBeOk();
   })
   .build();
 

@@ -5,77 +5,152 @@
  * All scenarios are expected to fail - they use dummy results to trigger failures.
  */
 import { expect, scenario } from "jsr:@probitas/probitas@^0";
-import type {
-  RedisArrayResult,
-  RedisCountResult,
-  RedisGetResult,
-  RedisHashResult,
-  RedisSetResult,
+import {
+  type RedisArrayResult,
+  RedisConnectionError,
+  type RedisCountResult,
+  type RedisGetResult,
+  type RedisHashResult,
+  type RedisSetResult,
 } from "jsr:@probitas/client-redis@^0";
 
-// Helper functions
-const mockGetResult = (
-  overrides: Partial<RedisGetResult> = {},
-): RedisGetResult => ({
-  kind: "redis:get" as const,
-  ok: false,
-  value: "cached-data",
-  duration: 5,
-  ...overrides,
-});
+// Helper functions - separate functions for ok:true and ok:false states
+// These test scenarios focus on assertion failures, not Redis errors.
+// Using success results lets us test value-based assertions that would fail.
 
-const mockSetResult = (
-  overrides: Partial<RedisSetResult> = {},
-): RedisSetResult => ({
-  kind: "redis:set" as const,
-  ok: false,
-  value: "OK" as const,
-  duration: 3,
-  ...overrides,
-});
+function createFailedGetResult(): RedisGetResult {
+  return {
+    kind: "redis:get" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    value: "cached-data",
+    duration: 5,
+  };
+}
 
-const mockCountResult = (
-  overrides: Partial<RedisCountResult> = {},
-): RedisCountResult => ({
-  kind: "redis:count" as const,
-  ok: false,
-  value: 42,
-  duration: 2,
-  ...overrides,
-});
+function createSuccessGetResult(): RedisGetResult {
+  return {
+    kind: "redis:get" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    value: "cached-data",
+    duration: 5,
+  };
+}
 
-const mockArrayResult = (
-  overrides: Partial<RedisArrayResult<string>> = {},
-): RedisArrayResult<string> => ({
-  kind: "redis:array" as const,
-  ok: false,
-  value: ["item1", "item2", "item3"] as const,
-  duration: 4,
-  ...overrides,
-});
+function createOkFalseGetResult(): RedisGetResult {
+  return {
+    kind: "redis:get" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new RedisConnectionError("Connection failed"),
+    value: null,
+    duration: 0,
+  };
+}
 
-const mockHashResult = (
-  overrides: Partial<RedisHashResult> = {},
-): RedisHashResult => ({
-  kind: "redis:hash" as const,
-  ok: false,
-  value: { field1: "value1", field2: "value2" },
-  duration: 6,
-  ...overrides,
-});
+function createOkFalseSetResult(): RedisSetResult {
+  return {
+    kind: "redis:set" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new RedisConnectionError("Connection failed"),
+    value: null,
+    duration: 0,
+  };
+}
 
-const dummyGetResult = mockGetResult();
-const dummySetResult = mockSetResult();
-const dummyCountResult = mockCountResult();
-const dummyArrayResult = mockArrayResult();
-const dummyHashResult = mockHashResult();
+function createOkFalseCountResult(): RedisCountResult {
+  return {
+    kind: "redis:count" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new RedisConnectionError("Connection failed"),
+    value: null,
+    duration: 0,
+  };
+}
+
+function createCountResultWithValue(): RedisCountResult {
+  return {
+    kind: "redis:count" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    value: 42,
+    duration: 2,
+  };
+}
+
+function createOkFalseArrayResult(): RedisArrayResult<string> {
+  return {
+    kind: "redis:array" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new RedisConnectionError("Connection failed"),
+    value: null,
+    duration: 0,
+  };
+}
+
+function createArrayResultWithValue(): RedisArrayResult<string> {
+  return {
+    kind: "redis:array" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    value: ["item1", "item2", "item3"],
+    duration: 4,
+  };
+}
+
+function createOkFalseHashResult(): RedisHashResult {
+  return {
+    kind: "redis:hash" as const,
+    processed: false as const,
+    ok: false as const,
+    error: new RedisConnectionError("Connection failed"),
+    value: null,
+    duration: 0,
+  };
+}
+
+function createHashResultWithValue(): RedisHashResult {
+  return {
+    kind: "redis:hash" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    value: { field1: "value1", field2: "value2" },
+    duration: 6,
+  };
+}
+
+function createSetResultWithValue(): RedisSetResult {
+  return {
+    kind: "redis:set" as const,
+    processed: true as const,
+    ok: true as const,
+    error: null,
+    value: "OK",
+    duration: 3,
+  };
+}
+
+const dummyGetResult = createFailedGetResult();
+const dummySetResult = createSetResultWithValue();
+const dummyCountResult = createCountResultWithValue();
+const dummyArrayResult = createArrayResultWithValue();
+const dummyHashResult = createHashResultWithValue();
 
 // GET result failures
 export const getToBeOk = scenario("Redis GET - toBeOk failure", {
   tags: ["failure", "redis"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyGetResult).toBeOk();
+    expect(createOkFalseGetResult()).toBeOk();
   })
   .build();
 
@@ -110,7 +185,7 @@ export const setToBeOk = scenario("Redis SET - toBeOk failure", {
   tags: ["failure", "redis"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummySetResult).toBeOk();
+    expect(createOkFalseSetResult()).toBeOk();
   })
   .build();
 
@@ -127,7 +202,7 @@ export const countToBeOk = scenario("Redis COUNT - toBeOk failure", {
   tags: ["failure", "redis"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyCountResult).toBeOk();
+    expect(createOkFalseCountResult()).toBeOk();
   })
   .build();
 
@@ -162,7 +237,7 @@ export const arrayToBeOk = scenario("Redis ARRAY - toBeOk failure", {
   tags: ["failure", "redis"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyArrayResult).toBeOk();
+    expect(createOkFalseArrayResult()).toBeOk();
   })
   .build();
 
@@ -198,7 +273,7 @@ export const hashToBeOk = scenario("Redis HASH - toBeOk failure", {
   tags: ["failure", "redis"],
 })
   .step("toBeOk fails when ok is false", () => {
-    expect(dummyHashResult).toBeOk();
+    expect(createOkFalseHashResult()).toBeOk();
   })
   .build();
 
@@ -234,8 +309,7 @@ export const notToBeOk = scenario("Redis - not.toBeOk failure", {
   tags: ["failure", "redis"],
 })
   .step("not.toBeOk fails when ok is true", () => {
-    const okResult = mockGetResult({ ok: true });
-    expect(okResult).not.toBeOk();
+    expect(createSuccessGetResult()).not.toBeOk();
   })
   .build();
 

@@ -39,36 +39,35 @@ export default scenario("HTTP Client Example", {
     expect(res)
       .toBeOk()
       .toHaveStatus(200)
-      .toHaveDataMatching({ args: { name: "probitas", version: "1" } });
+      .toHaveJsonMatching({ args: { name: "probitas", version: "1" } });
   })
   .step("POST /post - send JSON body", async (ctx) => {
     const { http } = ctx.resources;
     const res = await http.post("/post", {
-      message: "Hello from probitas",
-      count: 42,
+      body: { message: "Hello from probitas", count: 42 },
     });
 
     expect(res)
       .toBeOk()
-      .toHaveDataMatching({
+      .toHaveJsonMatching({
         json: { message: "Hello from probitas", count: 42 },
       });
   })
   .step("PUT /put - update resource", async (ctx) => {
     const { http } = ctx.resources;
-    const res = await http.put("/put", { id: 1, name: "updated" });
+    const res = await http.put("/put", { body: { id: 1, name: "updated" } });
 
     expect(res)
       .toBeOk()
-      .toHaveDataMatching({ json: { id: 1, name: "updated" } });
+      .toHaveJsonMatching({ json: { id: 1, name: "updated" } });
   })
   .step("PATCH /patch - partial update", async (ctx) => {
     const { http } = ctx.resources;
-    const res = await http.patch("/patch", { name: "patched" });
+    const res = await http.patch("/patch", { body: { name: "patched" } });
 
     expect(res)
       .toBeOk()
-      .toHaveDataMatching({ json: { name: "patched" } });
+      .toHaveJsonMatching({ json: { name: "patched" } });
   })
   .step("DELETE /delete - remove resource", async (ctx) => {
     const { http } = ctx.resources;
@@ -76,7 +75,7 @@ export default scenario("HTTP Client Example", {
 
     expect(res)
       .toBeOk()
-      .toHaveDataMatching({ args: { id: "123" } });
+      .toHaveJsonMatching({ args: { id: "123" } });
   })
   .step("GET /headers - custom headers", async (ctx) => {
     const { http } = ctx.resources;
@@ -89,7 +88,7 @@ export default scenario("HTTP Client Example", {
 
     expect(res)
       .toBeOk()
-      .toHaveDataMatching({
+      .toHaveJsonMatching({
         headers: {
           "X-Custom-Header": "custom-value",
           "X-Request-Id": "req-12345",
@@ -135,7 +134,7 @@ export default scenario("HTTP Client Example", {
 
     expect(res)
       .toBeOk()
-      .toHaveDataMatching({ authenticated: true, user: "testuser" });
+      .toHaveJsonMatching({ authenticated: true, user: "testuser" });
   })
   .step("GET /basic-auth - invalid credentials", async (ctx) => {
     const { http } = ctx.resources;
@@ -155,7 +154,7 @@ export default scenario("HTTP Client Example", {
 
     expect(res)
       .toBeOk()
-      .toHaveDataMatching({ authenticated: true, token: "my-secret-token" });
+      .toHaveJsonMatching({ authenticated: true, token: "my-secret-token" });
   })
   .step("GET /bearer - missing token", async (ctx) => {
     const { http } = ctx.resources;
@@ -171,17 +170,17 @@ export default scenario("HTTP Client Example", {
 
     expect(res)
       .toBeOk()
-      .toHaveDataMatching({ cookies: { session: "abc123", user: "probitas" } });
+      .toHaveJsonMatching({ cookies: { session: "abc123", user: "probitas" } });
   })
   .step("ANY /anything - echo everything", async (ctx) => {
     const { http } = ctx.resources;
     const res = await http.post("/anything/custom/path?key=value", {
-      data: "test",
+      body: { data: "test" },
     });
 
     expect(res)
       .toBeOk()
-      .toHaveDataMatching({ method: "POST", args: { key: "value" } });
+      .toHaveJsonMatching({ method: "POST", args: { key: "value" } });
   })
   .step("GET /ip - get client IP", async (ctx) => {
     const { http } = ctx.resources;
@@ -199,7 +198,7 @@ export default scenario("HTTP Client Example", {
     const { http } = ctx.resources;
     const res = await http.get("/health");
 
-    expect(res).toBeOk().toHaveDataMatching({ status: "ok" });
+    expect(res).toBeOk().toHaveJsonMatching({ status: "ok" });
   })
   .step("GET /bytes/{n} - random bytes", async (ctx) => {
     const { http } = ctx.resources;

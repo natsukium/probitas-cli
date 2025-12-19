@@ -5,28 +5,58 @@
  * All scenarios are expected to fail - they use dummy responses to trigger failures.
  */
 import { expect, scenario } from "jsr:@probitas/probitas@^0";
+import {
+  ConnectRpcError,
+  type ConnectRpcResponseError,
+  type ConnectRpcResponseSuccess,
+} from "jsr:@probitas/client-connectrpc@^0";
 import type { GrpcResponse } from "jsr:@probitas/client-grpc@^0";
 
-// Helper to create mock gRPC response
-function createMockResponse(
-  overrides: Partial<GrpcResponse> = {},
-): GrpcResponse {
-  const defaultResponse: GrpcResponse = {
+// Helper to create mock gRPC error response
+function createMockErrorResponse(): GrpcResponse {
+  const error = new ConnectRpcError(
+    "Resource not found",
+    5,
+    "NOT_FOUND",
+  );
+  const response: ConnectRpcResponseError = {
     kind: "connectrpc",
+    processed: true,
     ok: false,
-    statusCode: 5, // NOT_FOUND
+    error,
+    statusCode: 5,
     statusMessage: "Resource not found",
     headers: new Headers({ "grpc-status": "5" }),
     trailers: new Headers({ "grpc-message": "not found" }),
     // deno-lint-ignore no-explicit-any
     data: <T = any>(): T | null => null,
     duration: 250,
-    raw: () => ({}),
+    // deno-lint-ignore no-explicit-any
+    raw: () => error as any,
   };
-  return { ...defaultResponse, ...overrides };
+  return response;
 }
 
-const dummyResponse = createMockResponse();
+// Helper to create mock gRPC success response
+function createMockSuccessResponse(): GrpcResponse {
+  const response: ConnectRpcResponseSuccess = {
+    kind: "connectrpc",
+    processed: true,
+    ok: true,
+    error: null,
+    statusCode: 0,
+    statusMessage: null,
+    headers: new Headers(),
+    trailers: new Headers(),
+    // deno-lint-ignore no-explicit-any
+    data: <T = any>(): T | null => ({ message: "ok" }) as T,
+    duration: 100,
+    raw: () => ({}),
+  };
+  return response;
+}
+
+const dummyResponse: GrpcResponse = createMockErrorResponse();
 
 export const toBeOk = scenario("gRPC - toBeOk failure", {
   tags: ["failure", "grpc"],
@@ -155,11 +185,7 @@ export const notToBeOk = scenario("gRPC - not.toBeOk failure", {
   tags: ["failure", "grpc"],
 })
   .step("not.toBeOk fails when statusCode is 0", () => {
-    const okResponse = createMockResponse({
-      ok: true,
-      statusCode: 0,
-      statusMessage: "OK",
-    });
+    const okResponse: GrpcResponse = createMockSuccessResponse();
     expect(okResponse).not.toBeOk();
   })
   .build();
