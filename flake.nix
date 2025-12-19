@@ -7,12 +7,12 @@
   };
 
   outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-        probitas = pkgs.writeShellApplication {
+    let
+      # Overlay that adds probitas to pkgs
+      overlay = final: prev: {
+        probitas = prev.writeShellApplication {
           name = "probitas";
-          runtimeInputs = [ pkgs.deno ];
+          runtimeInputs = [ prev.deno ];
           text = ''
             export DENO_NO_UPDATE_CHECK=1
             exec deno run -A \
@@ -22,15 +22,28 @@
               ${self}/mod.ts "$@"
           '';
         };
+      };
+    in
+    {
+      # Overlay for easy integration
+      overlays.default = overlay;
+    }
+    //
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ overlay ];
+        };
       in
       {
         packages = {
-          inherit probitas;
-          default = probitas;
+          inherit (pkgs) probitas;
+          default = pkgs.probitas;
         };
 
         apps.default = flake-utils.lib.mkApp {
-          drv = probitas;
+          drv = pkgs.probitas;
         };
 
         devShells.default = pkgs.mkShell {

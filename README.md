@@ -57,10 +57,40 @@ nix run github:jsr-probitas/cli
 
 # Install to profile
 nix profile install github:jsr-probitas/cli
+```
 
-# Use in a flake (flake.nix)
+**Use in a flake (recommended):**
+
+```nix
 {
-  inputs.probitas-cli.url = "github:jsr-probitas/cli";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    probitas.url = "github:jsr-probitas/cli";
+  };
+
+  outputs = { nixpkgs, probitas, ... }:
+    let
+      system = "x86_64-linux"; # or "aarch64-darwin", etc.
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ probitas.overlays.default ];
+      };
+    in {
+      # Now you can use pkgs.probitas anywhere
+      devShells.${system}.default = pkgs.mkShell {
+        packages = [ pkgs.probitas ];
+      };
+    };
+}
+```
+
+**NixOS / Home Manager:**
+
+```nix
+{
+  nixpkgs.overlays = [ probitas.overlays.default ];
+  environment.systemPackages = [ pkgs.probitas ];  # NixOS
+  home.packages = [ pkgs.probitas ];               # Home Manager
 }
 ```
 
