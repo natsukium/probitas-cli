@@ -18,7 +18,7 @@
             exec deno run -A \
               --unstable-kv \
               --config=${self}/deno.json \
-              --frozen --lock=${self}/deno.lock \
+              --lock=${self}/deno.lock \
               ${self}/mod.ts "$@"
           '';
         };
