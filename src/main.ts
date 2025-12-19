@@ -10,7 +10,7 @@ import { EXIT_CODE } from "./constants.ts";
 import { initCommand } from "./commands/init.ts";
 import { listCommand } from "./commands/list.ts";
 import { runCommand } from "./commands/run.ts";
-import { getVersion, readAsset } from "./utils.ts";
+import { getVersionInfo, readAsset } from "./utils.ts";
 
 const logger = getLogger("probitas", "cli");
 
@@ -39,8 +39,15 @@ export async function main(args: string[]): Promise<number> {
 
   // Show version
   if (parsed.version) {
-    const version = await getVersion() ?? "unknown";
-    console.log(`probitas ${version}`);
+    const info = await getVersionInfo();
+    if (info) {
+      console.log(`probitas ${info.version}`);
+      for (const pkg of info.packages) {
+        console.log(`  ${pkg.name} ${pkg.version}`);
+      }
+    } else {
+      console.log("probitas unknown");
+    }
     return EXIT_CODE.SUCCESS;
   }
 
