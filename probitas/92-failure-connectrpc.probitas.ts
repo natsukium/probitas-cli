@@ -28,11 +28,10 @@ function createMockErrorResponse(): ConnectRpcResponse {
     statusMessage: "Invalid argument provided",
     headers: new Headers({ "content-type": "application/proto" }),
     trailers: new Headers(),
-    // deno-lint-ignore no-explicit-any
-    data: <T = any>(): T | null => null,
+    data: null,
     duration: 150,
     // deno-lint-ignore no-explicit-any
-    raw: () => error as any,
+    raw: error as any,
   };
   return response;
 }

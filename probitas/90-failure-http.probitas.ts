@@ -33,13 +33,23 @@ function createMockErrorResponse(
     headers: new Headers({ "content-type": "application/json" }),
     url: "http://example.com/api",
     body: bodyBytes,
-    arrayBuffer: () => bodyBytes.buffer,
-    blob: () => new Blob([bodyBytes]),
-    text: () => '{"error":"something went wrong"}',
+    get arrayBuffer() {
+      return bodyBytes.buffer;
+    },
+    get blob() {
+      return new Blob([bodyBytes]);
+    },
+    get text() {
+      return '{"error":"something went wrong"}';
+    },
     // deno-lint-ignore no-explicit-any
-    json: <T = any>(): T | null => ({ error: "something went wrong" }) as T,
+    get json(): any {
+      return { error: "something went wrong" };
+    },
     duration: 1500,
-    raw: () => rawResponse,
+    get raw() {
+      return rawResponse;
+    },
     error: new HttpError(500, "Internal Server Error", {
       headers: new Headers({ "content-type": "application/json" }),
       body: bodyBytes,
@@ -68,13 +78,23 @@ function createMockSuccessResponse(
     headers: new Headers({ "content-type": "application/json" }),
     url: "http://example.com/api",
     body: bodyBytes,
-    arrayBuffer: () => bodyBytes.buffer,
-    blob: () => new Blob([bodyBytes]),
-    text: () => '{"status":"ok"}',
+    get arrayBuffer() {
+      return bodyBytes.buffer;
+    },
+    get blob() {
+      return new Blob([bodyBytes]);
+    },
+    get text() {
+      return '{"status":"ok"}';
+    },
     // deno-lint-ignore no-explicit-any
-    json: <T = any>(): T | null => ({ status: "ok" }) as T,
+    get json(): any {
+      return { status: "ok" };
+    },
     duration: 100,
-    raw: () => rawResponse,
+    get raw() {
+      return rawResponse;
+    },
     error: null,
   };
   return { ...defaultResponse, ...overrides };

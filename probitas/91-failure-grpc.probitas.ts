@@ -28,11 +28,10 @@ function createMockErrorResponse(): GrpcResponse {
     statusMessage: "Resource not found",
     headers: new Headers({ "grpc-status": "5" }),
     trailers: new Headers({ "grpc-message": "not found" }),
-    // deno-lint-ignore no-explicit-any
-    data: <T = any>(): T | null => null,
+    data: null,
     duration: 250,
     // deno-lint-ignore no-explicit-any
-    raw: () => error as any,
+    raw: error as any,
   };
   return response;
 }

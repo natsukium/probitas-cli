@@ -37,14 +37,12 @@ function createMockErrorResponse(): GraphqlResponseError {
     status: 200,
     headers: new Headers({ "content-type": "application/json" }),
     extensions: { code: "VALIDATION_ERROR" },
-    // deno-lint-ignore no-explicit-any
-    data: <T = any>(): T | null => null,
+    data: null,
     duration: 300,
-    raw: () =>
-      new Response('{"errors":[{"message":"Field not found"}]}', {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      }),
+    raw: new Response('{"errors":[{"message":"Field not found"}]}', {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }),
   };
   return response;
 }
@@ -60,14 +58,12 @@ function createMockSuccessResponse(): GraphqlResponseSuccess {
     status: 200,
     headers: new Headers({ "content-type": "application/json" }),
     extensions: null,
-    // deno-lint-ignore no-explicit-any
-    data: <T = any>(): T | null => ({ user: { name: "Alice" } }) as T,
+    data: { user: { name: "Alice" } },
     duration: 100,
-    raw: () =>
-      new Response('{"data":{"user":{"name":"Alice"}}}', {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      }),
+    raw: new Response('{"data":{"user":{"name":"Alice"}}}', {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }),
   };
   return response;
 }
